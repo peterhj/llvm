@@ -44,7 +44,7 @@ namespace {
 
     virtual bool runOnMachineFunction(MachineFunction &Fn);
 
-    virtual const char *getPassName() const {
+    virtual StringRef *getPassName() const {
       return "RISCV Branch Selector";
     }
   };

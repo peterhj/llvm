@@ -593,7 +593,7 @@ bool RISCVAsmParser::parseParenSuffix(StringRef Name, OperandVector &Operands) {
 // Regs maps asm register numbers to LLVM register numbers, with zero
 // entries indicating an invalid register.  IsAddress says whether the
 // register appears in an address context.
-RISCVAsmParser::OperandMatchResultTy
+OperandMatchResultTy
 RISCVAsmParser::parseRegister(Register &Reg, char Prefix,
                                 const unsigned *Regs, bool IsAddress) {
   if (parseRegister(Reg))
@@ -615,7 +615,7 @@ RISCVAsmParser::parseRegister(Register &Reg, char Prefix,
 // with zero entries indicating an invalid register.  Kind is the type of
 // register represented by Regs and IsAddress says whether the register is
 // being parsed in an address context, meaning that %r0 evaluates as 0.
-RISCVAsmParser::OperandMatchResultTy
+OperandMatchResultTy
 RISCVAsmParser::parseRegister(OperandVector &Operands, char Prefix,
                               const unsigned *Regs,
                               RISCVOperand::RegisterKind Kind, bool IsAddress) {
@@ -631,7 +631,7 @@ RISCVAsmParser::parseRegister(OperandVector &Operands, char Prefix,
 // numbers to LLVM address registers and RegKind says what kind of address
 // register we're using (GR32Reg or GR64Reg).  HasIndex says whether
 // the address allows index registers.
-RISCVAsmParser::OperandMatchResultTy
+OperandMatchResultTy
 RISCVAsmParser::parseAddress(OperandVector &Operands, const unsigned *Regs,
                              RISCVOperand::RegisterKind RegKind,
                              bool HasIndex) {

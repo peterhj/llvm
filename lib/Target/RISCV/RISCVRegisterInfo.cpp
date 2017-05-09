@@ -98,10 +98,10 @@ void RISCVRegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
                                      int64_t SPOffset) const {
   MachineInstr &MI = *II;
   MachineFunction &MF = *MI.getParent()->getParent();
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   RISCVFunctionInfo *RISCVFI = MF.getInfo<RISCVFunctionInfo>();
 
-  const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
+  const std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
   int MinCSFI = 0;
   int MaxCSFI = -1;
 
@@ -186,8 +186,8 @@ RISCVRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
         errs() << "<--------->\n" << MI);
 
   int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
-  uint64_t stackSize = MF.getFrameInfo()->getStackSize();
-  int64_t spOffset = MF.getFrameInfo()->getObjectOffset(FrameIndex);
+  uint64_t stackSize = MF.getFrameInfo().getStackSize();
+  int64_t spOffset = MF.getFrameInfo().getObjectOffset(FrameIndex);
 
   DEBUG(errs() << "FrameIndex : " << FrameIndex << "\n"
                << "spOffset   : " << spOffset << "\n"

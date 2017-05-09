@@ -30,7 +30,7 @@ public:
     : AsmPrinter(TM, std::move(Streamer)) {}
 
   // Override AsmPrinter.
-  const char *getPassName() const override {
+  StringRef getPassName() const override {
     return "RISCV Assembly Printer";
   }
   void EmitInstruction(const MachineInstr *MI) override;

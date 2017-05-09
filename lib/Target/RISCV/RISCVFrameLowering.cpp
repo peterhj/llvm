@@ -63,9 +63,9 @@ RISCVFrameLowering::RISCVFrameLowering()
 // pointer register.  This is true if the function has variable sized allocas or
 // if frame pointer elimination is disabled.
 bool RISCVFrameLowering::hasFP(const MachineFunction &MF) const {
-  const MachineFrameInfo *MFI = MF.getFrameInfo();
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
   return MF.getTarget().Options.DisableFramePointerElim(MF) ||
-      MFI->hasVarSizedObjects() || MFI->isFrameAddressTaken();
+      MFI.hasVarSizedObjects() || MFI.isFrameAddressTaken();
 }
 
 
@@ -79,7 +79,7 @@ unsigned RISCVFrameLowering::ehDataReg(unsigned I) const {
 
 void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const {
   assert(&MBB == &MF.front() && "Shrink-wrapping not yet implemented");
-  MachineFrameInfo *MFI    = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   RISCVFunctionInfo *RISCVFI = MF.getInfo<RISCVFunctionInfo>();
   const RISCVRegisterInfo *RegInfo =
     static_cast<const RISCVRegisterInfo*>(MF.getSubtarget().getRegisterInfo());
@@ -94,10 +94,10 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
   unsigned ADDu = STI.isRV64() ? RISCV::ADD64 : RISCV::ADD;
 
   // First, compute final stack size.
-  uint64_t StackSize = MFI->getStackSize();
+  uint64_t StackSize = MFI.getStackSize();
 
   // No need to allocate space on the stack.
-  if (StackSize == 0 && !MFI->adjustsStack()) return;
+  if (StackSize == 0 && !MFI.adjustsStack()) return;
 
   MachineModuleInfo &MMI = MF.getMMI();
   const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
@@ -107,12 +107,12 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
   TII.adjustStackPtr(SP, -StackSize, MBB, MBBI);
 
   // emit ".cfi_def_cfa_offset StackSize"
-  unsigned CFIIndex = MMI.addFrameInst(
+  unsigned CFIIndex = MF.addFrameInst(
       MCCFIInstruction::createDefCfaOffset(nullptr, -StackSize));
   BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
       .addCFIIndex(CFIIndex);
 
-  const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
+  const std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
 
   if (CSI.size()) {
     // Find the instruction past the last instruction that saves a callee-saved
@@ -123,11 +123,11 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
     // Iterate over list of callee-saved registers and emit .cfi_offset
     // directives.
     for (const auto &I: CSI) {
-      int64_t Offset = MFI->getObjectOffset(I.getFrameIdx());
+      int64_t Offset = MFI.getObjectOffset(I.getFrameIdx());
       unsigned Reg = I.getReg();
 
       // Reg is either in CPURegs or FGR32.
-      unsigned CFIIndex = MMI.addFrameInst(MCCFIInstruction::createOffset(
+      unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::createOffset(
           nullptr, MRI->getDwarfRegNum(Reg, 1), Offset));
       BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex);
@@ -147,9 +147,9 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
 
     // Emit .cfi_offset directives for eh data registers.
     for (int I = 0; I < 4; ++I) {
-      int64_t Offset = MFI->getObjectOffset(RISCVFI->getEhDataRegFI(I));
+      int64_t Offset = MFI.getObjectOffset(RISCVFI->getEhDataRegFI(I));
       unsigned Reg = MRI->getDwarfRegNum(ehDataReg(I), true);
-      unsigned CFIIndex = MMI.addFrameInst(
+      unsigned CFIIndex = MF.addFrameInst(
           MCCFIInstruction::createOffset(nullptr, Reg, Offset));
       BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex);
@@ -165,7 +165,7 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
         .setMIFlag(MachineInstr::FrameSetup);
 
     // emit ".cfi_def_cfa_register $fp"
-    unsigned CFIIndex = MMI.addFrameInst(MCCFIInstruction::createDefCfaRegister(
+    unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::createDefCfaRegister(
         nullptr, MRI->getDwarfRegNum(FP, true)));
     BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex);
@@ -175,7 +175,7 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF, MachineBasicBlock &MB
 void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
                                        MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
-  MachineFrameInfo *MFI            = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   RISCVFunctionInfo *RISCVFI = MF.getInfo<RISCVFunctionInfo>();
   const RISCVRegisterInfo *RegInfo =
     static_cast<const RISCVRegisterInfo*>(MF.getSubtarget().getRegisterInfo());
@@ -193,7 +193,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
     // Find the first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
 
-    for (unsigned i = 0; i < MFI->getCalleeSavedInfo().size(); ++i)
+    for (unsigned i = 0; i < MFI.getCalleeSavedInfo().size(); ++i)
       --I;
 
     // Insert instruction "move $sp, $fp" at this location.
@@ -205,7 +205,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
 
     // Find first instruction that restores a callee-saved register.
     MachineBasicBlock::iterator I = MBBI;
-    for (unsigned i = 0; i < MFI->getCalleeSavedInfo().size(); ++i)
+    for (unsigned i = 0; i < MFI.getCalleeSavedInfo().size(); ++i)
       --I;
 
     // Insert instructions that restore eh data registers.
@@ -216,7 +216,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
   }
 
   // Get the number of bytes from FrameInfo
-  uint64_t StackSize = MFI->getStackSize();
+  uint64_t StackSize = MFI.getStackSize();
 
   if (!StackSize)
     return;
@@ -242,7 +242,7 @@ spillCalleeSavedRegisters(MachineBasicBlock &MBB,
     // is taken.
     unsigned Reg = CSI[i].getReg();
     bool IsRAAndRetAddrIsTaken = (Reg == RISCV::ra || Reg == RISCV::ra_64)
-        && MF->getFrameInfo()->isReturnAddressTaken();
+        && MF->getFrameInfo().isReturnAddressTaken();
     if (!IsRAAndRetAddrIsTaken)
       EntryBlock.addLiveIn(Reg);
 
@@ -258,14 +258,14 @@ spillCalleeSavedRegisters(MachineBasicBlock &MBB,
 
 bool
 RISCVFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
-  const MachineFrameInfo *MFI = MF.getFrameInfo();
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
 
   // Reserve call frame if the size of the maximum call frame fits into 16-bit
   // immediate field and there are no variable sized objects on the stack.
   // Make sure the second register scavenger spill slot can be accessed with one
   // instruction.
-  return isInt<12>(MFI->getMaxCallFrameSize() + getStackAlignment()) &&
-    !MFI->hasVarSizedObjects();
+  return isInt<12>(MFI.getMaxCallFrameSize() + getStackAlignment()) &&
+    !MFI.hasVarSizedObjects();
 }
 
 // Eliminate ADJCALLSTACKDOWN, ADJCALLSTACKUP pseudo instructions
@@ -292,7 +292,7 @@ eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
 void RISCVFrameLowering::determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
                                      RegScavenger *RS) const {
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   RISCVFunctionInfo *RISCVFI = MF.getInfo<RISCVFunctionInfo>();
   const RISCVSubtarget &STI = MF.getSubtarget<RISCVSubtarget>();
   unsigned FP = STI.isRV64() ? RISCV::fp_64 : RISCV::fp;
@@ -307,13 +307,13 @@ void RISCVFrameLowering::determineCalleeSaves(MachineFunction &MF, BitVector &Sa
 
   // Set scavenging frame index if necessary.
   uint64_t MaxSPOffset = MF.getInfo<RISCVFunctionInfo>()->getIncomingArgSize() +
-    MFI->estimateStackSize(MF);
+    MFI.estimateStackSize(MF);
 
   if (isInt<12>(MaxSPOffset))
     return;
 
   const TargetRegisterClass *RC = &RISCV::GR32BitRegClass;
-  int FI = MF.getFrameInfo()->CreateStackObject(RC->getSize(),
+  int FI = MF.getFrameInfo().CreateStackObject(RC->getSize(),
                                                 RC->getAlignment(), false);
   RS->addScavengingFrameIndex(FI);
 }

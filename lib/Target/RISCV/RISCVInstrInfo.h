@@ -64,12 +64,12 @@ public:
   bool AnalyzeBranch(MachineBasicBlock &MBB, MachineBasicBlock *&TBB,
                      MachineBasicBlock *&FBB,
                      SmallVectorImpl<MachineOperand> &Cond,
-                     bool AllowModify) const override;
-  unsigned RemoveBranch(MachineBasicBlock &MBB) const override;
+                     bool AllowModify) const;
+  unsigned RemoveBranch(MachineBasicBlock &MBB) const;
   unsigned InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
                         MachineBasicBlock *FBB,
                         ArrayRef<MachineOperand> Cond,
-                        const DebugLoc &DL) const override;
+                        const DebugLoc &DL) const;
   unsigned InsertBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I,
                               MachineBasicBlock *TBB,
                               ArrayRef<MachineOperand> Cond,
@@ -92,7 +92,7 @@ public:
                             const TargetRegisterInfo *TRI) const override;
   bool expandPostRAPseudo(MachineInstr &MI) const override;
   bool
-  ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const override;
+  ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const;
 
   // Return the RISCVRegisterInfo, which this class owns.
   const RISCVRegisterInfo &getRegisterInfo() const { return RI; }

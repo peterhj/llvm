@@ -736,7 +736,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
                      const SDLoc &DL, SelectionDAG &DAG,
                      SmallVectorImpl<SDValue> &InVals) const {
   MachineFunction &MF = DAG.getMachineFunction();
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   RISCVFunctionInfo *RISCVFI = MF.getInfo<RISCVFunctionInfo>();
 
   RISCVFI->setVarArgsFrameIndex(0);
@@ -819,7 +819,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
       EVT ValVT = VA.getValVT();
 
       // The stack pointer offset is relative to the caller stack frame.
-      int FI = MFI->CreateFixedObject(ValVT.getSizeInBits()/8,
+      int FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/8,
                                       VA.getLocMemOffset(), true);
 
       // Create load nodes to retrieve arguments from the stack
@@ -850,7 +850,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
 
     // Record the frame index of the first variable argument
     // which is a value necessary to VASTART.
-    int FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+    int FI = MFI.CreateFixedObject(RegSize, VaArgOffset, true);
     RISCVFI->setVarArgsFrameIndex(FI);
 
     // Copy the integer registers that have not been used for argument passing
@@ -858,7 +858,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
     for (unsigned I = Idx; I < NumRegs; ++I, VaArgOffset += RegSize) {
       unsigned Reg = addLiveIn(MF, ArgRegs[I], RC);
       SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, Reg, RegTy);
-      FI = MFI->CreateFixedObject(RegSize, VaArgOffset, true);
+      FI = MFI.CreateFixedObject(RegSize, VaArgOffset, true);
       SDValue PtrOff = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
       SDValue Store = DAG.getStore(Chain, DL, ArgValue, PtrOff,
                                    MachinePointerInfo(), false, false, 0);
@@ -1174,10 +1174,10 @@ SDValue RISCVTargetLowering::lowerRETURNADDR(SDValue Op, SelectionDAG &DAG) cons
     "Return address can be determined only for current frame.");
       
   MachineFunction &MF = DAG.getMachineFunction();
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   MVT VT = Op.getSimpleValueType();
   unsigned RA = Subtarget.isRV64() ? RISCV::ra_64 : RISCV::ra;
-  MFI->setReturnAddressIsTaken(true);
+  MFI.setReturnAddressIsTaken(true);
 
   // Return RA, which contains the return address. Mark it an implicit live-in.
   unsigned Reg = MF.addLiveIn(RA, getRegClassFor(VT));
@@ -1375,8 +1375,8 @@ lowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const {
   assert((cast<ConstantSDNode>(Op.getOperand(0))->getZExtValue() == 0) &&
          "Frame address can only be determined for current frame.");
 
-  MachineFrameInfo *MFI = DAG.getMachineFunction().getFrameInfo();
-  MFI->setFrameAddressIsTaken(true);
+  MachineFrameInfo &MFI = DAG.getMachineFunction().getFrameInfo();
+  MFI.setFrameAddressIsTaken(true);
   EVT VT = Op.getValueType();
   SDLoc DL(Op);
   SDValue FrameAddr = DAG.getCopyFromReg(DAG.getEntryNode(), DL,
