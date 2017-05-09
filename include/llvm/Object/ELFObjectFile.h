@@ -997,7 +997,7 @@ unsigned ELFObjectFile<ELFT>::getArch() const {
   case ELF::EM_RISCV:
     switch (EF.getHeader()->e_ident[ELF::EI_CLASS]) {
     case ELF::ELFCLASS32:
-      return Triple::riscv32;
+      return Triple::riscv;
     case ELF::ELFCLASS64:
       return Triple::riscv64;
     default:
