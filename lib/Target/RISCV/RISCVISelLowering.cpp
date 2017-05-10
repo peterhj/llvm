@@ -703,7 +703,7 @@ static SDValue convertLocVTToValVT(SelectionDAG &DAG, SDLoc DL, CCValAssign &VA,
     Value = DAG.getNode(ISD::TRUNCATE, DL, VA.getValVT(), Value);
   else if (VA.getLocInfo() == CCValAssign::Indirect)
     Value = DAG.getLoad(VA.getValVT(), DL, Chain, Value,
-                        MachinePointerInfo(), false, false, false, 0);
+                        MachinePointerInfo(), 0, MachineMemOperand::MONone);
   else
     assert(VA.getLocInfo() == CCValAssign::Full && "Unsupported getLocInfo");
   return Value;
@@ -826,7 +826,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
       SDValue FIN = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
       InVals.push_back(DAG.getLoad(ValVT, DL, Chain, FIN,
                                    MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI),
-                                   false, false, false, 0));
+                                   0, MachineMemOperand::MONone));
     }
   }
 
@@ -861,7 +861,7 @@ LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
       FI = MFI.CreateFixedObject(RegSize, VaArgOffset, true);
       SDValue PtrOff = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
       SDValue Store = DAG.getStore(Chain, DL, ArgValue, PtrOff,
-                                   MachinePointerInfo(), false, false, 0);
+                                   MachinePointerInfo(), 0, MachineMemOperand::MONone);
       cast<StoreSDNode>(Store.getNode())
           ->getMemOperand()
           ->setValue((Value *)nullptr);
@@ -985,8 +985,8 @@ RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
           SDValue AddArg = DAG.getNode(ISD::ADD, DL, PtrVT, ArgValue, Const);
           SDValue Load = DAG.getLoad(PtrVT, DL, Chain, AddArg,
                                      MachinePointerInfo(),
-                                     false, false, false,
-                                     DAG.InferPtrAlignment(AddArg));
+                                     DAG.InferPtrAlignment(AddArg),
+                                     MachineMemOperand::MONone);
           MemOpChains.push_back(Load.getValue(1));
           RegsToPass.push_back(std::make_pair(j, Load));
         }
@@ -1011,7 +1011,7 @@ RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
       // Emit the store.
       MemOpChains.push_back(DAG.getStore(Chain, DL, ArgValue, Address,
                                          MachinePointerInfo(),
-                                         false, false, 0));
+                                         0, MachineMemOperand::MONone));
     }
   }
 
@@ -1291,7 +1291,7 @@ SDValue RISCVTargetLowering::lowerVASTART(SDValue Op,
   // vastart just stores the address of the VarArgsFrameIndex slot into the
   // memory location argument.
   return DAG.getStore(Chain, DL, FI, Addr,
-                      MachinePointerInfo(SV), false, false, 0);
+                      MachinePointerInfo(SV), 0, MachineMemOperand::MONone);
 }
 
 SDValue RISCVTargetLowering::lowerVAARG(SDValue Op, SelectionDAG &DAG) const{
@@ -1303,18 +1303,18 @@ SDValue RISCVTargetLowering::lowerVAARG(SDValue Op, SelectionDAG &DAG) const{
   const Value *SV = cast<SrcValueSDNode>(Node->getOperand(2))->getValue();
   SDLoc DL(Node);
   SDValue VAList = DAG.getLoad(PtrVT, DL, InChain, VAListPtr,
-                               MachinePointerInfo(SV), false, false, false, 0);
+                               MachinePointerInfo(SV), 0, MachineMemOperand::MONone);
   // Increment the pointer, VAList, to the next vaarg.
   SDValue NextPtr = DAG.getNode(ISD::ADD, DL, PtrVT, VAList,
                                 DAG.getIntPtrConstant(VT.getSizeInBits()/8, DL));
   // Store the incremented VAList to the legalized pointer.
   InChain = DAG.getStore(VAList.getValue(1), DL, NextPtr,
-                         VAListPtr, MachinePointerInfo(SV), false, false, 0);
+                         VAListPtr, MachinePointerInfo(SV), 0, MachineMemOperand::MONone);
   // Load the actual argument out of the pointer VAList.
   // We can't count on greater alignment than the word size.
   return DAG.getLoad(VT, DL, InChain, VAList, MachinePointerInfo(),
-                     false, false, false,
-                     std::min(PtrVT.getSizeInBits(), VT.getSizeInBits())/8);
+                     std::min(PtrVT.getSizeInBits(), VT.getSizeInBits())/8,
+                     MachineMemOperand::MONone);
 }
 
 SDValue RISCVTargetLowering::lowerATOMIC_FENCE(SDValue Op, SelectionDAG &DAG) const {

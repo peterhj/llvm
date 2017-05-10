@@ -23,7 +23,7 @@ void RISCVFunctionInfo::createEhDataRegsFI() {
     const RISCVSubtarget *ST = &MF.getSubtarget<RISCVSubtarget>();
     const TargetRegisterClass *RC = ST->isRV64() ? &RISCV::GR64BitRegClass : &RISCV::GR32BitRegClass;
 
-    EhDataRegFI[I] = MF.getFrameInfo()->CreateStackObject(RC->getSize(),
+    EhDataRegFI[I] = MF.getFrameInfo().CreateStackObject(RC->getSize(),
         RC->getAlignment(), false);
   }
 }

@@ -77,7 +77,7 @@ bool RISCVBSel::runOnMachineFunction(MachineFunction &Fn) {
     unsigned BlockSize = 0;
     for (MachineBasicBlock::iterator MBBI = MBB.begin(), EE = MBB.end();
          MBBI != EE; ++MBBI)
-      BlockSize += TII->GetInstSizeInBytes(MBBI);
+      BlockSize += TII->GetInstSizeInBytes(*MBBI);
     
     BlockSizes[MBB.getNumber()] = BlockSize;
     FuncSize += BlockSize;
@@ -119,8 +119,8 @@ bool RISCVBSel::runOnMachineFunction(MachineFunction &Fn) {
         const MachineOperand *DestOp;
 
         //const MachineInstr *const_i = I;
-        if (!TII->isBranch(I, Cond, DestOp)){
-          MBBStartOffset += TII->GetInstSizeInBytes(I);
+        if (!TII->isBranch(*I, Cond, DestOp)){
+          MBBStartOffset += TII->GetInstSizeInBytes(*I);
           continue;
         }
 
@@ -128,12 +128,12 @@ bool RISCVBSel::runOnMachineFunction(MachineFunction &Fn) {
         Cond.clear();
         if(TII->AnalyzeBranch(MBB, Dest, FBB, Cond, false)){
           //we can't fix this branch since we can't even analyze it
-          MBBStartOffset += TII->GetInstSizeInBytes(I);
+          MBBStartOffset += TII->GetInstSizeInBytes(*I);
           continue;
         }
 
         if(Cond.empty() || Cond[0].getImm() == RISCV::CCMASK_ANY){
-          MBBStartOffset += TII->GetInstSizeInBytes(I);
+          MBBStartOffset += TII->GetInstSizeInBytes(*I);
           continue;
         }
         
@@ -164,17 +164,17 @@ bool RISCVBSel::runOnMachineFunction(MachineFunction &Fn) {
         }
 
         // Otherwise, we have to expand it to a long branch.
-        MachineInstr *OldBranch = I;
-        DebugLoc dl = OldBranch->getDebugLoc();
+        MachineInstr &OldBranch = *I;
+        DebugLoc dl = OldBranch.getDebugLoc();
  
         TII->ReverseBranchCondition(Cond);
-        TII->InsertConstBranchAtInst(MBB, I, 8, Cond, dl);
+        TII->InsertConstBranchAtInst(MBB, OldBranch, 8, Cond, dl);
 
         // Uncond branch to the real destination.
-        I = BuildMI(MBB, I, dl, TII->get(RISCV::J)).addMBB(Dest);
+        I = BuildMI(MBB, OldBranch, dl, TII->get(RISCV::J)).addMBB(Dest);
 
         // Remove the old branch from the function.
-        OldBranch->eraseFromParent();
+        OldBranch.eraseFromParent();
         
         // Remember that this instruction is 8-bytes, increase the size of the
         // block by 4, remember to iterate.

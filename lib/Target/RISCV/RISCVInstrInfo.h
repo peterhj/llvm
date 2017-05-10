@@ -60,7 +60,7 @@ public:
   void adjustStackPtr(unsigned SP, int64_t Amount,
                                      MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator I) const;
-  unsigned GetInstSizeInBytes(MachineInstr *I) const;
+  unsigned GetInstSizeInBytes(const MachineInstr &I) const;
   bool AnalyzeBranch(MachineBasicBlock &MBB, MachineBasicBlock *&TBB,
                      MachineBasicBlock *&FBB,
                      SmallVectorImpl<MachineOperand> &Cond,
@@ -70,11 +70,11 @@ public:
                         MachineBasicBlock *FBB,
                         ArrayRef<MachineOperand> Cond,
                         const DebugLoc &DL) const;
-  unsigned InsertBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I,
+  unsigned InsertBranchAtInst(MachineBasicBlock &MBB, MachineInstr &I,
                               MachineBasicBlock *TBB,
                               ArrayRef<MachineOperand> Cond,
                               const DebugLoc &DL) const;
-  unsigned InsertConstBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I,
+  unsigned InsertConstBranchAtInst(MachineBasicBlock &MBB, MachineInstr &I,
                                    int64_t offset,
                                    ArrayRef<MachineOperand> Cond,
                                    const DebugLoc &DL) const;
@@ -102,7 +102,7 @@ public:
   // values on which the instruction will branch, and set Target
   // to the operand that contains the branch target.  This target
   // can be a register or a basic block.
-  bool isBranch(const MachineInstr *MI, SmallVectorImpl<MachineOperand> &Cond,
+  bool isBranch(const MachineInstr &MI, SmallVectorImpl<MachineOperand> &Cond,
                 const MachineOperand *&Target) const;
 
   // Get the load and store opcodes for a given register class.

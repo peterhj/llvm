@@ -33,16 +33,16 @@ public:
   StringRef getPassName() const override {
     return "RISCV Assembly Printer";
   }
-  void EmitInstruction(const MachineInstr *MI) override;
+  void EmitInstruction(const MachineInstr &MI);
   void EmitMachineConstantPoolValue(MachineConstantPoolValue *MCPV) override;
-  void printOperand(const MachineInstr *MI, int opNum, raw_ostream &O);
-  bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
+  void printOperand(const MachineInstr &MI, int opNum, raw_ostream &O);
+  bool PrintAsmOperand(const MachineInstr &MI, unsigned OpNo,
                        unsigned AsmVariant, const char *ExtraCode,
-                       raw_ostream &OS) override;
-  bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
+                       raw_ostream &OS);
+  bool PrintAsmMemoryOperand(const MachineInstr &MI, unsigned OpNo,
                              unsigned AsmVariant, const char *ExtraCode,
-                             raw_ostream &OS) override;
-  void printMemOperand(const MachineInstr *MI, int opNum, raw_ostream &OS);
+                             raw_ostream &OS);
+  void printMemOperand(const MachineInstr &MI, int opNum, raw_ostream &OS);
   void EmitEndOfAsmFile(Module &M) override;
   bool runOnMachineFunction(MachineFunction &MF) override;
 };

@@ -109,15 +109,15 @@ MCOperand RISCVMCInstLower::lowerOperand(const MachineOperand &MO) const {
   }
 }
 
-void RISCVMCInstLower::lower(const MachineInstr *MI, MCInst &OutMI) const {
-  unsigned Opcode = MI->getOpcode();
+void RISCVMCInstLower::lower(const MachineInstr &MI, MCInst &OutMI) const {
+  unsigned Opcode = MI.getOpcode();
   // When emitting binary code, start with the shortest form of an instruction
   // and then relax it where necessary.
   if (!AsmPrinter.OutStreamer->hasRawTextSupport())
     Opcode = getShortenedInstr(Opcode);
   OutMI.setOpcode(Opcode);
-  for (unsigned I = 0, E = MI->getNumOperands(); I != E; ++I) {
-    const MachineOperand &MO = MI->getOperand(I);
+  for (unsigned I = 0, E = MI.getNumOperands(); I != E; ++I) {
+    const MachineOperand &MO = MI.getOperand(I);
     MCOperand MCOp = lowerOperand(MO);
     if (MCOp.isValid())
       OutMI.addOperand(MCOp);

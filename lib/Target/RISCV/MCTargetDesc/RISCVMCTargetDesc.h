@@ -22,6 +22,7 @@ class MCInstrInfo;
 class MCObjectWriter;
 class MCRegisterInfo;
 class MCSubtargetInfo;
+class MCTargetOptions;
 class StringRef;
 class Target;
 class raw_ostream;
@@ -34,8 +35,10 @@ MCCodeEmitter *createRISCVMCCodeEmitter(const MCInstrInfo &MCII,
                                           MCContext &Ctx);
 
 MCAsmBackend *createRISCVMCAsmBackend(const Target &T,
-                                      const MCRegisterInfo &MRI, const Triple &TT,
-                                      StringRef CPU);
+                                      const MCRegisterInfo &MRI,
+                                      const Triple &TT,
+                                      StringRef CPU,
+                                      const MCTargetOptions &Options);
 
 MCObjectWriter *createRISCVObjectWriter(raw_pwrite_stream &OS, uint8_t OSABI);
 

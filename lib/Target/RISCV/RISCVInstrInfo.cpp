@@ -71,7 +71,7 @@ void RISCVInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
   }
 }
 
-unsigned RISCVInstrInfo::GetInstSizeInBytes(MachineInstr *I) const {
+unsigned RISCVInstrInfo::GetInstSizeInBytes(const MachineInstr &I) const {
   //Since we don't have variable length instructions this just looks at the subtarget
   //TODO:check for C
   return (STI.isRV64() || STI.isRV32()) ? 4 : 4;
@@ -102,7 +102,7 @@ bool RISCVInstrInfo::AnalyzeBranch(MachineBasicBlock &MBB,
     SmallVector<MachineOperand, 4> ThisCond;
     ThisCond.push_back(MachineOperand::CreateImm(0));
     const MachineOperand *ThisTarget;
-    if (!isBranch(I, ThisCond, ThisTarget))
+    if (!isBranch(*I, ThisCond, ThisTarget))
       return true;
 
     // Can't handle indirect branches.
@@ -183,7 +183,7 @@ unsigned RISCVInstrInfo::RemoveBranch(MachineBasicBlock &MBB) const {
     SmallVector<MachineOperand, 4> Cond;
     Cond.push_back(MachineOperand::CreateImm(0));
     const MachineOperand *Target;
-    if (!isBranch(I, Cond, Target))
+    if (!isBranch(*I, Cond, Target))
       break;
     if (!Target->isMBB())
       break;
@@ -205,16 +205,16 @@ RISCVInstrInfo::InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
     //Need to build two branches then
     //one to branch to TBB on Cond
     //and a second one immediately after to unconditionally jump to FBB
-    unsigned count = InsertBranchAtInst(MBB, MBB.end(), TBB, Cond, DL);
+    unsigned count = InsertBranchAtInst(MBB, *MBB.end(), TBB, Cond, DL);
     BuildMI(&MBB, DL, get(RISCV::J)).addMBB(FBB);
     count++;
     return count;
   }
   //This function inserts the branch at the end of the MBB
-  return InsertBranchAtInst(MBB, MBB.end(), TBB, Cond, DL);
+  return InsertBranchAtInst(MBB, *MBB.end(), TBB, Cond, DL);
 }
 unsigned
-RISCVInstrInfo::InsertConstBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I, int64_t offset,
+RISCVInstrInfo::InsertConstBranchAtInst(MachineBasicBlock &MBB, MachineInstr &I, int64_t offset,
                                ArrayRef<MachineOperand> Cond,
                                const DebugLoc &DL) const {
   // Shouldn't be a fall through.
@@ -281,7 +281,7 @@ RISCVInstrInfo::InsertConstBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I,
 }
 
 unsigned
-RISCVInstrInfo::InsertBranchAtInst(MachineBasicBlock &MBB, MachineInstr *I,
+RISCVInstrInfo::InsertBranchAtInst(MachineBasicBlock &MBB, MachineInstr &I,
                                MachineBasicBlock *TBB, ArrayRef<MachineOperand> Cond,
                                const DebugLoc &DL) const {
   // Shouldn't be a fall through.
@@ -505,9 +505,9 @@ ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const {
   }
 }
 
-bool RISCVInstrInfo::isBranch(const MachineInstr *MI, SmallVectorImpl<MachineOperand> &Cond,
+bool RISCVInstrInfo::isBranch(const MachineInstr &MI, SmallVectorImpl<MachineOperand> &Cond,
                                 const MachineOperand *&Target) const {
-  switch (MI->getOpcode()) {
+  switch (MI.getOpcode()) {
   case RISCV::J:
   case RISCV::J64:
   case RISCV::JAL:
@@ -515,63 +515,63 @@ bool RISCVInstrInfo::isBranch(const MachineInstr *MI, SmallVectorImpl<MachineOpe
   case RISCV::JALR:
   case RISCV::JALR64:
     Cond[0].setImm(RISCV::CCMASK_ANY);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BEQ:
   case RISCV::BEQ64:
     Cond[0].setImm(RISCV::CCMASK_CMP_EQ);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BNE:
   case RISCV::BNE64:
     Cond[0].setImm(RISCV::CCMASK_CMP_NE);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BLT:
   case RISCV::BLT64:
     Cond[0].setImm(RISCV::CCMASK_CMP_LT);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BLTU:
   case RISCV::BLTU64:
     Cond[0].setImm(RISCV::CCMASK_CMP_LT | RISCV::CCMASK_CMP_UO);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BGE:
   case RISCV::BGE64:
     Cond[0].setImm(RISCV::CCMASK_CMP_GE);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BGEU:
   case RISCV::BGEU64:
     Cond[0].setImm(RISCV::CCMASK_CMP_GE | RISCV::CCMASK_CMP_UO);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
 //synth
   case RISCV::BGT:
   case RISCV::BGT64:
     Cond[0].setImm(RISCV::CCMASK_CMP_GT);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BGTU:
   case RISCV::BGTU64:
     Cond[0].setImm(RISCV::CCMASK_CMP_GT | RISCV::CCMASK_CMP_UO);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BLE:
   case RISCV::BLE64:
     Cond[0].setImm(RISCV::CCMASK_CMP_LE);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
   case RISCV::BLEU:
   case RISCV::BLEU64:
     Cond[0].setImm(RISCV::CCMASK_CMP_LE | RISCV::CCMASK_CMP_UO);
-    Target = &MI->getOperand(0);
+    Target = &MI.getOperand(0);
     return true;
  
 
   default:
-    assert(!MI->getDesc().isBranch() && "Unknown branch opcode");
+    assert(!MI.getDesc().isBranch() && "Unknown branch opcode");
     return false;
   }
 }

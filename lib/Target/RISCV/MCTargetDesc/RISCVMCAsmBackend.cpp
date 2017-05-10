@@ -62,7 +62,8 @@ public:
   bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
                             const MCRelaxableFragment *Fragment,
                             const MCAsmLayout &Layout) const override;
-  void relaxInstruction(const MCInst &Inst, MCInst &Res) const;
+  //void relaxInstruction(const MCInst &Inst, MCInst &Res) const;
+  void relaxInstruction(const MCInst &Inst, const MCSubtargetInfo &STI, MCInst &Res) const;
   bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override;
   MCObjectWriter *createObjectWriter(raw_pwrite_stream &OS) const override {
     return createRISCVObjectWriter(OS, OSABI);
@@ -120,6 +121,7 @@ RISCVMCAsmBackend::fixupNeedsRelaxation(const MCFixup &Fixup,
 }
 
 void RISCVMCAsmBackend::relaxInstruction(const MCInst &Inst,
+                                           const MCSubtargetInfo &STI,
                                            MCInst &Res) const {
   unsigned Opcode = getRelaxedOpcode(Inst.getOpcode());
   assert(Opcode && "Unexpected insn to relax");
@@ -136,7 +138,8 @@ bool RISCVMCAsmBackend::writeNopData(uint64_t Count,
 
 MCAsmBackend *llvm::createRISCVMCAsmBackend(const Target &T,
                                             const MCRegisterInfo &MRI,
-                                            const Triple &TT, StringRef CPU) {
+                                            const Triple &TT, StringRef CPU,
+                                            const MCTargetOptions &Options) {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
   return new RISCVMCAsmBackend(OSABI);
 }
