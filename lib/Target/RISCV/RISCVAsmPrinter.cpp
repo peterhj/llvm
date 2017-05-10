@@ -25,10 +25,10 @@
 
 using namespace llvm;
 
-void RISCVAsmPrinter::EmitInstruction(const MachineInstr &MI) {
+void RISCVAsmPrinter::EmitInstruction(const MachineInstr *MI) {
   RISCVMCInstLower Lower(MF->getContext(), *this);
   MCInst LoweredMI;
-  Lower.lower(MI, LoweredMI);
+  Lower.lower(*MI, LoweredMI);
   EmitToStreamer(*OutStreamer, LoweredMI);
 }
 
@@ -85,28 +85,28 @@ void RISCVAsmPrinter::printOperand(const MachineInstr &MI, int OpNo, raw_ostream
 }
 
 
-bool RISCVAsmPrinter::PrintAsmOperand(const MachineInstr &MI,
+bool RISCVAsmPrinter::PrintAsmOperand(const MachineInstr *MI,
                                         unsigned OpNo,
                                         unsigned AsmVariant,
                                         const char *ExtraCode,
                                         raw_ostream &OS) {
   if (ExtraCode && *ExtraCode == 'n') {
-    if (!MI.getOperand(OpNo).isImm())
+    if (!MI->getOperand(OpNo).isImm())
       return true;
-    OS << -int64_t(MI.getOperand(OpNo).getImm());
+    OS << -int64_t(MI->getOperand(OpNo).getImm());
   } else {
-    printOperand(MI, OpNo, OS);
+    printOperand(*MI, OpNo, OS);
   }
   return false;
 }
 
-bool RISCVAsmPrinter::PrintAsmMemoryOperand(const MachineInstr &MI,
+bool RISCVAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
                                               unsigned OpNo,
                                               unsigned AsmVariant,
                                               const char *ExtraCode,
                                               raw_ostream &OS) {
-  RISCVInstPrinter::printAddress(MI.getOperand(OpNo).getReg(),
-                                   MI.getOperand(OpNo + 1).getImm(),
+  RISCVInstPrinter::printAddress(MI->getOperand(OpNo).getReg(),
+                                   MI->getOperand(OpNo + 1).getImm(),
                                    OS);
   return false;
 }
